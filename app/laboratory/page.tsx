@@ -2,30 +2,15 @@
 
 import React, { useState, useEffect } from "react";
 import DashboardPageLayout from "@/components/dashboard/layout";
-import DashboardStat from "@/components/dashboard/stat";
 import DashboardCard from "@/components/dashboard/card";
 import DashboardChart from "@/components/dashboard/chart";
 import AtomIcon from "@/components/icons/atom";
-import GearIcon from "@/components/icons/gear";
-import ProcessorIcon from "@/components/icons/proccesor";
-import BoomIcon from "@/components/icons/boom";
-import BracketsIcon from "@/components/icons/brackets";
-import CuteRobotIcon from "@/components/icons/cute-robot";
+import AgentPlayground from "@/components/AgentPlayground";
 import { Badge } from "@/components/ui/badge";
 import { Bullet } from "@/components/ui/bullet";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import mockDataJson from "@/mock.json";
-import type { MockData } from "@/types/dashboard";
-import { getHealth, getSystemInfo, type ServiceHealth, type SystemInfo } from "@/lib/api-client";
-
-const mockData = mockDataJson as MockData;
-
-const iconMap = {
-  gear: GearIcon,
-  proccesor: ProcessorIcon,
-  boom: BoomIcon,
-};
+import { getSystemInfo, type SystemInfo } from "@/lib/api-client";
 
 interface Experiment {
   id: string;
@@ -46,6 +31,14 @@ const defaultExperiments: Experiment[] = [
   { id: "exp-6", name: "Resource Optimizer", description: "Dynamic resource allocation engine", status: "error", progress: 89, lastRun: "Failed", category: "system" },
 ];
 
+const MOCK_SYSINFO: SystemInfo = {
+  memory: { total: "7.5G", used: "4.2G", percent: 56 },
+  disk: { total: "64G", used: "23G", percent: 36 },
+  uptime: "3d 14h 22m",
+  hostname: "zes-mobile",
+  load: [1.2, 1.0, 0.8],
+};
+
 const categoryColors: Record<string, string> = {
   ml: "bg-purple-500/20 text-purple-400 border-purple-500/30",
   network: "bg-cyan-500/20 text-cyan-400 border-cyan-500/30",
@@ -56,13 +49,12 @@ const categoryColors: Record<string, string> = {
 export default function LaboratoryPage() {
   const [experiments, setExperiments] = useState<Experiment[]>(defaultExperiments);
   const [sysInfo, setSysInfo] = useState<SystemInfo | null>(null);
-  const [services, setServices] = useState<ServiceHealth[]>([]);
 
   useEffect(() => {
     const fetchData = async () => {
-      const [health, system] = await Promise.all([getHealth(), getSystemInfo()]);
-      if (health) setServices(health);
+      const system = await getSystemInfo();
       if (system) setSysInfo(system);
+      else setSysInfo(MOCK_SYSINFO);
     };
     fetchData();
     const interval = setInterval(fetchData, 10000);
@@ -80,7 +72,6 @@ export default function LaboratoryPage() {
   };
 
   const activeExpCount = experiments.filter((e) => e.status === "running").length;
-  const runningServices = services.filter((s) => s.running).length;
 
   return (
     <DashboardPageLayout
@@ -90,40 +81,9 @@ export default function LaboratoryPage() {
         icon: AtomIcon,
       }}
     >
-      {/* Stats Row */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <DashboardStat
-          label="ACTIVE EXPERIMENTS"
-          value={`${activeExpCount}`}
-          description={`OF ${experiments.length} TOTAL`}
-          icon={AtomIcon}
-          intent={activeExpCount > 0 ? "positive" : "negative"}
-          direction="up"
-        />
-        <DashboardStat
-          label="SERVICES ONLINE"
-          value={`${runningServices}`}
-          description={services.length ? `OF ${services.length} TOTAL` : "LOADING..."}
-          icon={GearIcon}
-          intent={runningServices > 0 ? "positive" : "negative"}
-          direction={runningServices > 2 ? "up" : "down"}
-        />
-        <DashboardStat
-          label="CPU LOAD"
-          value={sysInfo ? `${sysInfo.load[0]?.toFixed(1) ?? "0.0"}` : "0.0"}
-          description="LOAD AVERAGE (1m)"
-          icon={ProcessorIcon}
-          intent={sysInfo && sysInfo.load[0] > 2 ? "negative" : "positive"}
-          direction={sysInfo && sysInfo.load[0] > 2 ? "up" : "down"}
-        />
-        <DashboardStat
-          label="MEMORY USED"
-          value={sysInfo?.memory.used ?? "0G"}
-          description={`OF ${sysInfo?.memory.total ?? "N/A"} TOTAL`}
-          icon={BoomIcon}
-          intent={sysInfo && sysInfo.memory.percent > 80 ? "negative" : "positive"}
-          direction="up"
-        />
+
+      <div className="mb-6">
+        <AgentPlayground />
       </div>
 
       {/* Active Experiments */}

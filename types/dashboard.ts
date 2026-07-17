@@ -67,3 +67,58 @@ export interface MockData {
 }
 
 export type TimePeriod = "week" | "month" | "year";
+
+// ── Agent Playground ──
+
+export interface Provider {
+  id: string;
+  name: string;
+  baseUrl: string;
+  color: string;
+}
+
+export interface Model {
+  id: string;
+  name: string;
+  provider: string;
+  capabilities: string[];
+  contextWindow: number;
+  available: boolean;
+}
+
+export interface AgentConfig {
+  name: string;
+  provider: string;
+  model: string;
+  systemPrompt: string;
+  workingDir: string;
+  flags: string[];
+  envVars: Record<string, string>;
+}
+
+export interface ApiRequest {
+  method: "GET" | "POST" | "PUT" | "DELETE" | "PATCH";
+  endpoint: string;
+  provider: string;
+  model: string;
+  body: string;
+  headers: Record<string, string>;
+}
+
+export interface ApiResponse {
+  status: number;
+  statusText: string;
+  body: string;
+  timing: number;
+  tokenUsage?: { prompt: number; completion: number; total: number };
+}
+
+export type PlaygroundTab = "api" | "models" | "create-agent";
+
+export interface ExampleTemplate {
+  name: string;
+  description: string;
+  method: string;
+  endpoint: string;
+  body: string;
+}
