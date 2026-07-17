@@ -3,7 +3,6 @@
 import React, { useState, useEffect } from "react";
 import DashboardPageLayout from "@/components/dashboard/layout";
 import DashboardCard from "@/components/dashboard/card";
-import DashboardChart from "@/components/dashboard/chart";
 import AtomIcon from "@/components/icons/atom";
 import AgentPlayground from "@/components/AgentPlayground";
 import { Badge } from "@/components/ui/badge";
@@ -49,6 +48,9 @@ const categoryColors: Record<string, string> = {
 export default function LaboratoryPage() {
   const [experiments, setExperiments] = useState<Experiment[]>(defaultExperiments);
   const [sysInfo, setSysInfo] = useState<SystemInfo | null>(null);
+  const [formName, setFormName] = useState("");
+  const [formDesc, setFormDesc] = useState("");
+  const [formCategory, setFormCategory] = useState<"ml" | "network" | "system" | "monitor">("ml");
 
   useEffect(() => {
     const fetchData = async () => {
@@ -60,6 +62,39 @@ export default function LaboratoryPage() {
     const interval = setInterval(fetchData, 10000);
     return () => clearInterval(interval);
   }, []);
+
+  // Auto-increment progress for running experiments
+  useEffect(() => {
+    const tick = setInterval(() => {
+      setExperiments(prev => prev.map(exp =>
+        exp.status === "running" && exp.progress < 100
+          ? { ...exp, progress: Math.min(exp.progress + 1, 100) }
+          : exp
+      ));
+    }, 3000);
+    return () => clearInterval(tick);
+  }, []);
+
+  const handleCreateExperiment = () => {
+    if (!formName.trim()) return;
+    const newExp: Experiment = {
+      id: `exp-${Date.now()}`,
+      name: formName.trim(),
+      description: formDesc.trim() || "New experiment",
+      status: "stopped",
+      progress: 0,
+      lastRun: "Never",
+      category: formCategory,
+    };
+    setExperiments(prev => [...prev, newExp]);
+    setFormName("");
+    setFormDesc("");
+    setFormCategory("ml");
+  };
+
+  const handleDeleteExperiment = (id: string) => {
+    setExperiments(prev => prev.filter(exp => exp.id !== id));
+  };
 
   const toggleExperiment = (id: string) => {
     setExperiments((prev) =>
@@ -85,6 +120,47 @@ export default function LaboratoryPage() {
       <div className="mb-6">
         <AgentPlayground />
       </div>
+
+      {/* Create Experiment */}
+      <DashboardCard title="CREATE EXPERIMENT" intent="default" className="mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="md:col-span-1">
+            <label className="block text-[10px] uppercase tracking-wider text-muted-foreground mb-1.5">Name</label>
+            <input
+              type="text"
+              value={formName}
+              onChange={e => setFormName(e.target.value)}
+              placeholder="Experiment name"
+              className="w-full bg-accent/30 border border-border/40 rounded-lg px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary/50"
+            />
+          </div>
+          <div className="md:col-span-2">
+            <label className="block text-[10px] uppercase tracking-wider text-muted-foreground mb-1.5">Description</label>
+            <input
+              type="text"
+              value={formDesc}
+              onChange={e => setFormDesc(e.target.value)}
+              placeholder="What does this experiment do?"
+              className="w-full bg-accent/30 border border-border/40 rounded-lg px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary/50"
+            />
+          </div>
+          <div className="md:col-span-1 flex items-end gap-2">
+            <select
+              value={formCategory}
+              onChange={e => setFormCategory(e.target.value as any)}
+              className="flex-1 bg-accent/30 border border-border/40 rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:border-primary/50"
+            >
+              <option value="ml">ML</option>
+              <option value="network">Network</option>
+              <option value="system">System</option>
+              <option value="monitor">Monitor</option>
+            </select>
+            <Button size="sm" className="h-9 px-4" onClick={handleCreateExperiment}>
+              CREATE
+            </Button>
+          </div>
+        </div>
+      </DashboardCard>
 
       {/* Active Experiments */}
       <DashboardCard
@@ -171,16 +247,60 @@ export default function LaboratoryPage() {
                 >
                   {exp.status === "running" ? "STOP" : exp.status === "error" ? "FAILED" : "START"}
                 </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive"
+                  onClick={() => handleDeleteExperiment(exp.id)}
+                  title="Delete experiment"
+                >
+                  ✕
+                </Button>
               </div>
             </div>
           ))}
         </div>
       </DashboardCard>
 
-      {/* Chart */}
-      <div className="mb-6">
-        <DashboardChart />
-      </div>
+      {/* Experiment Activity */}
+      <DashboardCard title="EXPERIMENT ACTIVITY" intent="default" className="mb-6">
+        <div className="bg-accent rounded-lg p-3">
+          <div className="flex items-center justify-between mb-4">
+            <span className="text-xs text-muted-foreground uppercase tracking-wider">Runs by category</span>
+            <div className="flex items-center gap-4">
+              <span className="flex items-center gap-1.5 text-[10px]"><span className="size-2 rounded-full bg-chart-1" /> Running</span>
+              <span className="flex items-center gap-1.5 text-[10px]"><span className="size-2 rounded-full bg-chart-2" /> Stopped</span>
+            </div>
+          </div>
+          <div className="grid grid-cols-4 gap-3 min-h-[140px] items-end">
+            {(["ml","network","system","monitor"] as const).map(cat => {
+              const running = experiments.filter(e => e.category === cat && e.status === "running").length;
+              const stopped = experiments.filter(e => e.category === cat && e.status !== "running").length;
+              const total = running + stopped;
+              const maxCount = Math.max(1, ...(["ml","network","system","monitor"] as const).map(c => {
+                const all = experiments.filter(e => e.category === c);
+                return all.length;
+              }));
+              const runningH = Math.max(20, (running / maxCount) * 120);
+              const stoppedH = Math.max(20, (stopped / maxCount) * 120);
+              return (
+                <div key={cat} className="flex flex-col items-center justify-end gap-1">
+                  <div className="flex flex-col-reverse items-center gap-0.5 w-full">
+                    {running > 0 && (
+                      <div className="w-full bg-chart-1 rounded-t" style={{ height: runningH }} title={`${running} running`} />
+                    )}
+                    {stopped > 0 && (
+                      <div className="w-full bg-chart-2/40 rounded-b" style={{ height: stoppedH }} title={`${stopped} stopped`} />
+                    )}
+                  </div>
+                  <span className="text-[10px] uppercase text-muted-foreground font-mono">{cat}</span>
+                  <span className="text-xs font-bold">{total}</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </DashboardCard>
 
       {/* System Monitor */}
       <DashboardCard title="SYSTEM MONITOR" intent="default">

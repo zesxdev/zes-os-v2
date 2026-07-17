@@ -100,7 +100,7 @@ function TabContent() {
 export default function AgentPlayground() {
   return (
     <PlaygroundProvider>
-      <DashboardCard title="AGENT PLAYGROUND" intent="default">
+      <DashboardCard title="AGENT PLAYGROUND" intent="default" className="bg-primary/10 border-primary/20">
         <PlaygroundTabs />
         <TabContent />
       </DashboardCard>
