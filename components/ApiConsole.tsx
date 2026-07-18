@@ -1,78 +1,30 @@
 "use client";
 
 import React, { useState, useCallback } from "react";
-import dynamic from "next/dynamic";
 import type { ApiRequest, ApiResponse, ExampleTemplate } from "@/types/dashboard";
 import { PROVIDERS, EXAMPLE_TEMPLATES, ROUTER_API } from "@/lib/constants";
 import { usePlayground } from "@/lib/playground-context";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-
-// Lazy-load Monaco with error handling
-const MonacoEditor = dynamic(
-  () => import("@monaco-editor/react").then(mod => {
-    // Configure Monaco to use local assets instead of CDN
-    return mod;
-  }),
-  { ssr: false }
-);
-
-function EditorFallback() {
-  return (
-    <textarea
-      className="w-full h-[200px] bg-accent/20 border border-border/30 rounded-lg p-3 font-mono text-xs text-foreground resize-y"
-      aria-label="JSON editor fallback"
-      readOnly
-      value="Monaco editor unavailable — using textarea fallback"
-    />
-  );
-}
-
 function substituteVars(body: string, model: string, provider: string): string {
   return body.replace(/\{\{MODEL\}\}/g, model).replace(/\{\{PROVIDER\}\}/g, provider);
 }
 
 const METHODS = ["GET", "POST", "PUT", "DELETE", "PATCH"];
 
-function JsonEditor({ value, onChange, theme }: { value: string; onChange: (v: string) => void; theme: string }) {
-  const [monacoReady, setMonacoReady] = useState(true);
-  const [hasError, setHasError] = useState(false);
-
-  if (hasError) {
-    return (
-      <textarea
-        value={value}
-        onChange={e => onChange(e.target.value)}
-        className="w-full h-[200px] bg-accent/20 border border-border/30 rounded-lg p-3 font-mono text-xs text-foreground resize-y"
-        aria-label="Request body editor"
-      />
-    );
-  }
-
+function JsonEditor({ value, onChange }: { value: string; onChange: (v: string) => void }) {
   return (
-    <div className="relative min-h-[200px] border border-border/30 rounded-lg overflow-hidden">
-      <MonacoEditor
-        height="200px"
-        defaultLanguage="json"
-        value={value}
-        onChange={val => onChange(val ?? "")}
-        theme={theme === "dark" ? "vs-dark" : "vs"}
-        options={{
-          minimap: { enabled: false },
-          fontSize: 12,
-          lineNumbers: "off",
-          scrollBeyondLastLine: false,
-          padding: { top: 8 },
-        }}
-        loading={<div className="p-4 text-[10px] text-muted-foreground">Loading editor...</div>}
-        onMount={() => setMonacoReady(true)}
-      />
-    </div>
+    <textarea
+      value={value}
+      onChange={e => onChange(e.target.value)}
+      className="w-full h-[200px] bg-accent/20 border border-border/30 rounded-lg p-3 font-mono text-xs text-foreground resize-y"
+      aria-label="Request body editor"
+    />
   );
 }
 
 export default function ApiConsole() {
-  const { theme, addRecentRequest } = usePlayground();
+  const { addRecentRequest } = usePlayground();
 
   const [method, setMethod] = useState("POST");
   const [endpoint, setEndpoint] = useState("/v1/chat/completions");
@@ -212,7 +164,7 @@ export default function ApiConsole() {
       <div className="flex flex-col md:flex-row gap-3">
         {/* Editor */}
         <div className="flex-1 min-h-[200px]">
-          <JsonEditor value={body} onChange={setBody} theme={theme} />
+          <JsonEditor value={body} onChange={setBody} />
         </div>
 
         {/* Response Panel */}

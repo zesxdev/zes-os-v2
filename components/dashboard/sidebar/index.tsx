@@ -83,12 +83,7 @@ const data = {
           icon: EmailIcon,
           isActive: false,
         },
-        {
-          title: "OC Chat",
-          url: "/oc-chat",
-          icon: CuteRobotIcon,
-          isActive: false,
-        },
+
         {
           title: "9Router",
           url: "/9router",

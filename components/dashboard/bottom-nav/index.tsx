@@ -21,7 +21,7 @@ const navItems = [
   { title: "Services", href: "/service", icon: CuteRobotIcon, desc: "Guard Bots" },
   { title: "Comm", href: "/communication", icon: EmailIcon, desc: "Messages" },
   { title: "H.Chat", href: "/hermes-chat", icon: ZesIcon, desc: "Hermes" },
-  { title: "OChat", href: "/oc-chat", icon: GearIcon, desc: "OC Chat" },
+
   { title: "Router", href: "/9router", icon: BracketsIcon, desc: "9Router" },
   { title: "Topo", href: "/topology", icon: LockIcon, desc: "Topology" },
   { title: "C.Web", href: "/codex-web", icon: BracketsIcon, desc: "Codex" },
